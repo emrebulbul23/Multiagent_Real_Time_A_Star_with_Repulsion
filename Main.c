@@ -4,6 +4,8 @@
 #include <time.h>
 
 // global variables
+static unsigned int ALFA = 10;
+
 unsigned int N;
 unsigned int NUMBER_OF_AGENTS;
 unsigned int NUMBER_OF_OBSTACLES;
@@ -49,20 +51,20 @@ int getManhattanDistance(Tuple from, Tuple to);
 */
 int isBlocked(Tuple t, Obstacle* obstacles);
 
-int getHValue(Agent* agent, int* h_global, Tuple new_position_tuple){
-  int h_value = -1;
-  int new_position = new_position_tuple.y*(N+1)+new_position_tuple.x;
-  if(agent->is_visited[new_position]=='y'){
-    h_value = agent->h_local[new_position];
-  }else if(h_global[new_position] > 0){
-    h_value = h_global[new_position];
-  }
-  if(h_value==-1){
-    h_value = getManhattanDistance(new_position_tuple,(Tuple){N,N});
-  }
-  printf("%d\n",h_value );
-  return h_value;
-}
+/*
+* Calculate repulsive range for agent.
+*/
+float calculateRepulsiveRange(Agent* agent);
+
+/*
+* Get adjaceny for the agent with id agent_id.
+*/
+int getAdjacencyOfAgent(int agent_id, Agent* agents);
+
+/*
+* Get the h value depending on the history of cells visited to calculate f value.
+*/
+int getHValue(Agent* agent, int* h_global, Tuple new_position_tuple);
 
 void chooseNextCell(Agent* agent, Obstacle* obstacles,  int* h_global){
   //           up, right, down, left
@@ -144,6 +146,7 @@ int main(void){
   }
 
   chooseNextCell(agents+1,obstacles,h_global);
+  printf("adjaceny: %d\n",getAdjacencyOfAgent(1,agents));
 
   return 0;
 }
@@ -165,4 +168,40 @@ int isBlocked(Tuple t, Obstacle* obstacles){
       return 1;
   }
   return 0;
+}
+
+float calculateRepulsiveRange(Agent* agent){
+  int h_start = getManhattanDistance((Tuple){1,1},(Tuple){N,N});
+  int h_agent = getManhattanDistance((Tuple){agent->x,agent->y},(Tuple){N,N});
+  return (ALFA*h_agent)/h_start;
+}
+
+int getAdjacencyOfAgent(int agent_id, Agent* agents){
+  Tuple tuple_1 = (Tuple){(agents+agent_id)->x,(agents+agent_id)->y};
+  int distance = 0;
+  for(int i = 1; i < NUMBER_OF_AGENTS+1; i++){
+    if(i!=agent_id){
+      Tuple tuple_2 = (Tuple){(agents+i)->x,(agents+i)->y};
+      int temp = getManhattanDistance(tuple_1,tuple_2);
+      if(temp<distance){
+        distance = temp;
+      }
+    }
+  }
+  return distance;
+}
+
+int getHValue(Agent* agent, int* h_global, Tuple new_position_tuple){
+  int h_value = -1;
+  int new_position = new_position_tuple.y*(N+1)+new_position_tuple.x;
+  if(agent->is_visited[new_position]=='y'){
+    h_value = agent->h_local[new_position];
+  }else if(h_global[new_position] > 0){
+    h_value = h_global[new_position];
+  }
+  if(h_value==-1){
+    h_value = getManhattanDistance(new_position_tuple,(Tuple){N,N});
+  }
+  printf("%d\n",h_value );
+  return h_value;
 }
