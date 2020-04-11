@@ -133,15 +133,19 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
     int in_repulsion_flag = 1;
     int max_adj = -1;
     int max_adj_arg = 0;
+    int rand_number = rand() % 4;
+    printf("rand_number: %d\n",rand_number );
     for(int i = 0; i<4; i++){
-      int adj = getAdjacencyOfAgent(t[i],agent->id,agents);
+      int new_index = (i + rand_number)%4;
+      printf("new_index: %d\n",new_index );
+      int adj = getAdjacencyOfAgent(t[new_index],agent->id,agents);
       if(adj>=repulsive_range){
         in_repulsion_flag = -1;
         break;
       }else{
-        if(max_adj < adj){
+        if(max_adj < adj && temp_min == f_values[new_index]){
           max_adj = adj;
-          max_adj_arg = i;
+          max_adj_arg = new_index;
         }
       }
     }
@@ -152,10 +156,12 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
     }else{
       // choose any that outside of repulsion range
       // TODO choose random
+      int rand_number = rand() % 4;
       for (int i = 0; i < 4; i++) {
-        int adj = getAdjacencyOfAgent(t[i],agent->id,agents);
-        if(adj >= repulsive_range){
-          arg_min = i;
+        int new_index = (i + rand_number)%4;
+        int adj = getAdjacencyOfAgent(t[new_index],agent->id,agents);
+        if(adj >= repulsive_range && temp_min == f_values[new_index]){
+          arg_min = new_index;
           break;
         }
       }
@@ -193,6 +199,22 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
   }
 }
 
+void updateAgentLocation(Agent* agent, char nex_position){
+  if(nex_position=='U'){
+    agent->x = agent->x;
+    agent->y = agent->y+1;
+  }else if(nex_position=='R'){
+    agent->x = agent->x+1;
+    agent->y = agent->y;
+  }else if(nex_position=='D'){
+    agent->x = agent->x;
+    agent->y = agent->y-1;
+  }else{
+    agent->x = agent->x-1;
+    agent->y = agent->y;
+  }
+}
+
 int main(void){
   srand(time(NULL));
   FILE* filePtr;
@@ -225,7 +247,7 @@ int main(void){
 
   // global h list
   int* h_global = malloc(sizeof(int)*NUMBER_OF_CELLS);
-  memset(h_global, -1, NUMBER_OF_CELLS*sizeof(int));
+  memset(h_global, 0, NUMBER_OF_CELLS*sizeof(int));
 
   // the obstacles
   int o = 0;
@@ -237,7 +259,7 @@ int main(void){
   }
 
   // buffer for the next steps
-  char* next_agent_steps = malloc(sizeof(char)*NUMBER_OF_AGENTS);
+  char* next_agent_steps = malloc(sizeof(char)*NUMBER_OF_AGENTS+1);
 
 
   // printf("Fonsiyondan çıktım\n");
@@ -254,11 +276,18 @@ int main(void){
   int time_step = 0;
   while(1){
     time_step++;
-    char c;
     printf("Step:%d\n",time_step);
     for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
-      c = chooseNextCell(agents+i,agents,obstacles,h_global);
-      printf("Agent%d: %c      (%d,%d)\n",i,c,agents[i].x,agents[i].y);
+      next_agent_steps[i] = chooseNextCell(agents+i,agents,obstacles,h_global);
+    }
+    for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
+      updateAgentLocation(agents+i,next_agent_steps[i]);
+      printf("Agent%d: %c      (%d,%d)\n",i,next_agent_steps[i],agents[i].x,agents[i].y);
+      printf("h_local\n");
+      for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+        printf("%d ", agents[1].h_local[i]);
+      }
+      printf("\n");
     }
     int end = -1;
     for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
@@ -267,6 +296,11 @@ int main(void){
         break;
       }
     }
+    printf("\nh_global\n");
+    for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+      printf("%d ", h_global[i]);
+    }
+    printf("\n");
     if(end > 0){
       printf("Agent%d reached the goal.\n",end);
       break;
@@ -322,11 +356,11 @@ int getHValue(Agent* agent, int* h_global, Tuple new_position_tuple){
   int new_position = new_position_tuple.y*(N+1)+new_position_tuple.x;
   if(agent->is_visited[new_position]=='y'){
     h_value = agent->h_local[new_position];
-  }else if(h_global[new_position] > 0){
+  }else if(h_global[new_position] >= 0){
     h_value = h_global[new_position];
   }
-  if(h_value==-1){
-    h_value = getManhattanDistance(new_position_tuple,(Tuple){N,N});
-  }
+  // if(h_value==-1){
+  //   h_value = getManhattanDistance(new_position_tuple,(Tuple){N,N});
+  // }
   return h_value;
 }
