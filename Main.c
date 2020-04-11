@@ -21,7 +21,7 @@ typedef struct{
   unsigned int id;
   unsigned int x;
   unsigned int y;
-  unsigned char* is_visited;
+  int* is_visited;
   int* h_local;
 } Agent;
 
@@ -134,10 +134,8 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
     int max_adj = -1;
     int max_adj_arg = 0;
     int rand_number = rand() % 4;
-    printf("rand_number: %d\n",rand_number );
     for(int i = 0; i<4; i++){
       int new_index = (i + rand_number)%4;
-      printf("new_index: %d\n",new_index );
       int adj = getAdjacencyOfAgent(t[new_index],agent->id,agents);
       if(adj>=repulsive_range){
         in_repulsion_flag = -1;
@@ -169,7 +167,7 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
   }
 
   //estimation update
-  int agent_pos = agent->x + agent->y*N;
+  int agent_pos = agent->x + agent->y*(N+1);
   *(h_global+agent_pos) = temp_min;
 
   // find second best estimation
@@ -200,6 +198,8 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
 }
 
 void updateAgentLocation(Agent* agent, char nex_position){
+  int loc = (agent->x + (agent->y*(N+1)));
+  agent->is_visited[loc] = 1;
   if(nex_position=='U'){
     agent->x = agent->x;
     agent->y = agent->y+1;
@@ -239,8 +239,8 @@ int main(void){
     agents[i].id = i;
     agents[i].x = 1;
     agents[i].y = 1;
-    agents[i].is_visited = malloc(sizeof(char)*NUMBER_OF_CELLS);
-    memset(agents[i].is_visited, 'n', NUMBER_OF_CELLS*sizeof(char));
+    agents[i].is_visited = malloc(sizeof(int)*NUMBER_OF_CELLS);
+    memset(&agents[i].is_visited[0], -1, NUMBER_OF_CELLS*sizeof(int));
     agents[i].h_local = malloc(sizeof(int)*NUMBER_OF_CELLS);
     memset(agents[i].h_local, -1, NUMBER_OF_CELLS*sizeof(int));
   }
@@ -279,16 +279,26 @@ int main(void){
     printf("Step:%d\n",time_step);
     for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
       next_agent_steps[i] = chooseNextCell(agents+i,agents,obstacles,h_global);
-    }
-    for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
       updateAgentLocation(agents+i,next_agent_steps[i]);
       printf("Agent%d: %c      (%d,%d)\n",i,next_agent_steps[i],agents[i].x,agents[i].y);
-      printf("h_local\n");
-      for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-        printf("%d ", agents[1].h_local[i]);
+      printf("\nh_local\n");
+        for (int j = 0; j < NUMBER_OF_CELLS; j++) {
+          printf("%d ", (agents+i)->h_local[j]);
       }
-      printf("\n");
+      printf("\nis_visited\n");
+        for (int j = 0; j < NUMBER_OF_CELLS; j++) {
+          printf("%d ", (agents+i)->is_visited[j]);
+      }
     }
+    // for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
+    //   updateAgentLocation(agents+i,next_agent_steps[i]);
+    //   printf("Agent%d: %c      (%d,%d)\n",i,next_agent_steps[i],agents[i].x,agents[i].y);
+    //   printf("h_local\n");
+    //   for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+    //     printf("%d ", agents[1].h_local[i]);
+    //   }
+    //   printf("\n");
+    // }
     int end = -1;
     for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
       if(agents[i].x == N && agents[i].y == N){
@@ -303,6 +313,9 @@ int main(void){
     printf("\n");
     if(end > 0){
       printf("Agent%d reached the goal.\n",end);
+      break;
+    }
+    if(time_step >100){
       break;
     }
     printf("\n");
@@ -354,13 +367,13 @@ int getAdjacencyOfAgent(Tuple new_position, int agent_id, Agent* agents){
 int getHValue(Agent* agent, int* h_global, Tuple new_position_tuple){
   int h_value = -1;
   int new_position = new_position_tuple.y*(N+1)+new_position_tuple.x;
-  if(agent->is_visited[new_position]=='y'){
+  if((agent->is_visited[new_position])>0){
     h_value = agent->h_local[new_position];
   }else if(h_global[new_position] >= 0){
     h_value = h_global[new_position];
   }
-  // if(h_value==-1){
-  //   h_value = getManhattanDistance(new_position_tuple,(Tuple){N,N});
-  // }
+  if(h_value==-1){
+    h_value = getManhattanDistance(new_position_tuple,(Tuple){N,N});
+  }
   return h_value;
 }
