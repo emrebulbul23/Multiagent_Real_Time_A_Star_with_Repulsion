@@ -272,6 +272,9 @@ int main(void){
   //   printf("%d ", agents[1].h_local[i]);
   // }
 
+  // begin recording
+  clock_t start_time = clock();
+
   // search
   int time_step = 0;
   while(1){
@@ -281,14 +284,21 @@ int main(void){
       next_agent_steps[i] = chooseNextCell(agents+i,agents,obstacles,h_global);
       updateAgentLocation(agents+i,next_agent_steps[i]);
       printf("Agent%d: %c      (%d,%d)\n",i,next_agent_steps[i],agents[i].x,agents[i].y);
+      printf("\nh_global\n");
+      for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+        printf("%d ", h_global[i]);
+      }
+      printf("\n");
       printf("\nh_local\n");
         for (int j = 0; j < NUMBER_OF_CELLS; j++) {
           printf("%d ", (agents+i)->h_local[j]);
       }
+      printf("\n");
       printf("\nis_visited\n");
         for (int j = 0; j < NUMBER_OF_CELLS; j++) {
           printf("%d ", (agents+i)->is_visited[j]);
       }
+      printf("\n");
     }
     // for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
     //   updateAgentLocation(agents+i,next_agent_steps[i]);
@@ -306,13 +316,10 @@ int main(void){
         break;
       }
     }
-    printf("\nh_global\n");
-    for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-      printf("%d ", h_global[i]);
-    }
-    printf("\n");
     if(end > 0){
-      printf("Agent%d reached the goal.\n",end);
+      clock_t end_time = clock();
+      double time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+      printf("Agent%d reached the goal in %f seconds.\n",end,time_spent);
       break;
     }
     if(time_step >100){
