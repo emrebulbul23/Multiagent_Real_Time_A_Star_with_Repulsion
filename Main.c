@@ -10,6 +10,7 @@ unsigned int N;
 unsigned int NUMBER_OF_AGENTS;
 unsigned int NUMBER_OF_OBSTACLES;
 unsigned int NUMBER_OF_CELLS;
+unsigned int BIG_PENALTY;
 
 /*
 * Agent struct.
@@ -94,6 +95,7 @@ int main(void){
   NUMBER_OF_AGENTS = atoi(strtok(NULL," "));
   NUMBER_OF_OBSTACLES = atoi(strtok(NULL," "));
   NUMBER_OF_CELLS = (N+1)*(N+1);
+  BIG_PENALTY = NUMBER_OF_CELLS;
 
   // init agents
   Agent* agents = malloc(sizeof(Agent)*NUMBER_OF_AGENTS+1);
@@ -135,6 +137,21 @@ int main(void){
       next_agent_steps[i] = chooseNextCell(agents+i,agents,obstacles,h_global);
       updateAgentLocation(agents+i,next_agent_steps[i]);
       printf("Agent%d: %c      (%d,%d)\n",i,next_agent_steps[i],agents[i].x,agents[i].y);
+      // printf("\nh_global\n");
+      // for (int i = 0; i < NUMBER_OF_CELLS; i++) {
+      //   printf("%d ", h_global[i]);
+      // }
+      // printf("\n");
+      // printf("\nh_local\n");
+      //   for (int j = 0; j < NUMBER_OF_CELLS; j++) {
+      //     printf("%d ", (agents+i)->h_local[j]);
+      // }
+      // printf("\n");
+      // printf("\nis_visited\n");
+      //   for (int j = 0; j < NUMBER_OF_CELLS; j++) {
+      //     printf("%d ", (agents+i)->is_visited[j]);
+      // }
+      // printf("\n");
     }
     int end = -1;
     for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
@@ -147,9 +164,6 @@ int main(void){
       clock_t end_time = clock();
       double time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
       printf("Agent%d reached the goal in %f seconds.\n",end,time_spent);
-      break;
-    }
-    if(time_step >100){
       break;
     }
     printf("\n");
@@ -168,25 +182,29 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
   t[0] = (Tuple){agent->x,agent->y+1};
   if(isBlocked(t[0],obstacles) == 0){
     f_values[0] = 0;
-    f_values[0] = 1 + getHValue(agent, h_global, t[0]);
+    int h_temp = getHValue(agent, h_global, t[0]);
+    f_values[0] = h_temp==BIG_PENALTY ? h_temp : h_temp +1;
   }
   // right
   t[1]  = (Tuple){agent->x+1,agent->y};
   if(isBlocked(t[1],obstacles) == 0){
     f_values[1] = 0;
-    f_values[1] = 1 + getHValue(agent, h_global, t[1]);
+    int h_temp = getHValue(agent, h_global, t[1]);
+    f_values[1] = h_temp==BIG_PENALTY ? h_temp : h_temp +1;
   }
   // down;
   t[2] = (Tuple){agent->x,agent->y-1};
   if(isBlocked(t[2],obstacles) == 0){
     f_values[2] = 0;
-    f_values[2] = 1 + getHValue(agent, h_global, t[2]);
+    int h_temp = getHValue(agent, h_global, t[2]);
+    f_values[2] = h_temp==BIG_PENALTY ? h_temp : h_temp +1;
   }
   // left
   t[3] = (Tuple){agent->x-1,agent->y};
   if(isBlocked(t[3],obstacles) == 0){
     f_values[3] = 0;
-    f_values[3] = 1 + getHValue(agent, h_global, t[3]);
+    int h_temp = getHValue(agent, h_global, t[3]);
+    f_values[3] = h_temp==BIG_PENALTY ? h_temp : h_temp +1;
   }
 
   // Choice
@@ -251,7 +269,12 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
 
   //estimation update
   int agent_pos = agent->x + agent->y*(N+1);
-  *(h_global+agent_pos) = temp_min;
+  int admissible_range = getManhattanDistance((Tuple){agent->x,agent->y},(Tuple){N,N});
+  if (temp_min > admissible_range){
+    *(h_global+agent_pos) = admissible_range;
+  }else{
+    *(h_global+agent_pos) = temp_min;
+  }
 
   // find second best estimation
   int second_best = -1;
@@ -263,7 +286,7 @@ char chooseNextCell(Agent* agent,Agent* agents ,Obstacle* obstacles,  int* h_glo
     }
   }
 
-  agent->h_local[agent_pos] = second_best == -1 ? 2147483647 : second_best;
+  agent->h_local[agent_pos] = second_best == -1 ? BIG_PENALTY : second_best;
 
   if(arg_min==0){
     return 'U';
