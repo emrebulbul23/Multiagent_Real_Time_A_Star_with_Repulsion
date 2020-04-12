@@ -137,21 +137,6 @@ int main(void){
       next_agent_steps[i] = chooseNextCell(agents+i,agents,obstacles,h_global);
       updateAgentLocation(agents+i,next_agent_steps[i]);
       printf("Agent%d: %c      (%d,%d)\n",i,next_agent_steps[i],agents[i].x,agents[i].y);
-      // printf("\nh_global\n");
-      // for (int i = 0; i < NUMBER_OF_CELLS; i++) {
-      //   printf("%d ", h_global[i]);
-      // }
-      // printf("\n");
-      // printf("\nh_local\n");
-      //   for (int j = 0; j < NUMBER_OF_CELLS; j++) {
-      //     printf("%d ", (agents+i)->h_local[j]);
-      // }
-      // printf("\n");
-      // printf("\nis_visited\n");
-      //   for (int j = 0; j < NUMBER_OF_CELLS; j++) {
-      //     printf("%d ", (agents+i)->is_visited[j]);
-      // }
-      // printf("\n");
     }
     int end = -1;
     for(int i=1; i < NUMBER_OF_AGENTS+1; i++){
@@ -343,17 +328,20 @@ float calculateRepulsiveRange(Agent* agent){
 }
 
 int getAdjacencyOfAgent(Tuple new_position, int agent_id, Agent* agents){
-  int distance = 0;
-  for(int i = 1; i < NUMBER_OF_AGENTS+1; i++){
-    if(i!=agent_id){
-      Tuple tuple_2 = (Tuple){(agents+i)->x,(agents+i)->y};
-      int temp = getManhattanDistance(new_position,tuple_2);
-      if(temp<distance){
-        distance = temp;
+  if(NUMBER_OF_AGENTS>1){
+    int distance = getManhattanDistance((Tuple){1,1},(Tuple){N,N});
+    for(int i = 1; i < NUMBER_OF_AGENTS+1; i++){
+      if(i!=agent_id){
+        Tuple tuple_2 = (Tuple){(agents+i)->x,(agents+i)->y};
+        int temp = getManhattanDistance(new_position,tuple_2);
+        if(temp<distance){
+          distance = temp;
+        }
       }
     }
+    return distance;
   }
-  return distance;
+  return 0;
 }
 
 int getHValue(Agent* agent, int* h_global, Tuple new_position_tuple){
